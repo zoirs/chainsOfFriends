@@ -1,45 +1,28 @@
-import React, {Component} from "react";
+import React, {PureComponent} from "react";
 
-class Article extends Component {
-
-    // constructor(props) {
-    //     super(props)
-    //
-    //     this.state = {
-    //         isOpen: true
-    //     }
-    // }
-
-    state = {
-        isOpen: false
-    }
-
-    handleClick = () => {
-        this.setState({
-            isOpen: !this.state.isOpen
-        })
-        console.log("===")
-    }
+class Article extends PureComponent {
 
     render() {
-        const {article} = this.props
-        const body = this.state.isOpen && <selection>{article.text}</selection>
+        const {article, isOpen, onOpenClick} = this.props
+        const body = isOpen && <selection className="card-text">{article.text}</selection>
         return (
-            <div className='hello'>
-                <h2>{article.title}
-                    <button onClick={this.handleClick}>
-                        {this.state.isOpen ? 'close' : 'open'}
-                    </button>
-                </h2>
-                {body}
-                <h3>Date: {(new Date(article.date)).toDateString()}</h3>
+            <div className='card mx-auto' style={{width: '50%'}}>
+                <div className="card-header">
+                    <h2>{article.title}
+                        <button onClick={onOpenClick} className="btn btn-primary btn-lg float-right">
+                            {isOpen ? 'close' : 'open'}
+                        </button>
+                    </h2>
+                </div>
+                <div className="card-body">
+
+                    {body}
+                    <h6 className="card-subtitle text-muted">Date: {(new Date(article.date)).toDateString()}</h6>
+                </div>
             </div>
         )
     }
 }
 
-function handleClick() {
-
-}
 
 export default Article
