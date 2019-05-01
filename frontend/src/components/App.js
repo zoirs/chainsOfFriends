@@ -4,15 +4,17 @@ import {Route, IndexRoute} from 'react-router';
 import ArticleList from './ArticleList'
 import articles from '../fixture'
 import 'bootstrap/dist/css/bootstrap.css'
+import InputUserInfo from "./InputUserInfo";
 
 class App extends Component {
     state = {
         reverted: false
-    }
+    };
 
     render() {
         return (
             <div className="container">
+                <InputUserInfo/>
                 <button className="btn  btn-primary" onClick={this.hello}>Залогинетсяww</button>
                 {/*<div onClick={this.props.history.push('/path')}> some stuff </div>*/}
                 <div className="jumbotron">
