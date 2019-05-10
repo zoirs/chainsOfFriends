@@ -1,4 +1,7 @@
 import React, {Component} from 'react'
+import Avatar from "./Avatar";
+
+const {URL, URLSearchParams} = require('url');
 
 
 class InputUserInfo extends Component {
@@ -6,7 +9,8 @@ class InputUserInfo extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            inputValue: ''
+            id: '',
+            avaUrl: ""
         };
 
         this.handleChange = this.handleChange.bind(this);
@@ -16,21 +20,38 @@ class InputUserInfo extends Component {
     render() {
         return (
             <div className="container">
-                {/*<label>{this.state.name} {this.state.surname}</label>*/}
-                <input type="text" value={this.state.inputValue} onChange={this.handleChange}
+                <Avatar avaUrl={this.state.avaUrl}/>
+                <input type="text" value={this.state.id} onChange={this.handleChange}
                        onBlur={this.onGetUserId}/>
             </div>
         )
     }
 
     handleChange = (e) => {
-        console.log(e.target.value);
-        this.setState({inputValue: e.target.value});
+        this.setState({id: e.target.value});
     };
 
     onGetUserId = () => {
-        console.log(this.state.inputValue);
-        alert(this.state.inputValue);
+
+        var params = {id: this.state.id};
+
+        var esc = encodeURIComponent;
+        var query = Object.keys(params)
+            .map(k => esc(k) + '=' + esc(params[k]))
+            .join('&');
+
+        console.log(query);
+
+        fetch('/api/user?' + query)
+            .then(response => {
+                return response.json();
+            })
+            .then(user => {
+                this.setState({
+                    avaUrl: user.photo
+                })
+            });
+
     };
 
 }
