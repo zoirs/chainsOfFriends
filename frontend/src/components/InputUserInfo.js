@@ -13,6 +13,9 @@ class InputUserInfo extends Component {
             avaUrl: ""
         };
 
+        this.chooseCallback = this.props.chooseCallback;
+        this.index = this.props.index;
+
         this.handleChange = this.handleChange.bind(this);
     }
 
@@ -50,6 +53,7 @@ class InputUserInfo extends Component {
                 this.setState({
                     avaUrl: user.photo
                 })
+                this.chooseCallback(this.index, user.id);
             });
 
     };
