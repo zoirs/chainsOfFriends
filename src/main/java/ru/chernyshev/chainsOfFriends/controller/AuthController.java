@@ -55,8 +55,8 @@ public class AuthController {
     }
 
     @GetMapping("/api/authurl")
-    public String authurl(@RequestParam String firstUser, @RequestParam String secondUser) {
-        logger.info("authurl " + firstUser + " " + secondUser);
+    public String authurl() {
+//        logger.info("authurl " + firstUser + " " + secondUser);
         return getOAuthUrl();
     }
 

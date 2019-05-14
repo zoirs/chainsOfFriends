@@ -189,21 +189,10 @@ class App extends Component {
                 <br/>
                 <button disabled={!this.state.canFind} className="btn  btn-primary" onClick={this.findChain}>Искать
                 </button>
-                {/*<div className="jumbotron">*/}
-                {/*<h1 className="display-3">*/}
-                {/*App name*/}
-                {/*<button className="btn  btn-primary" onClick={this.revert}>Revert</button>*/}
-                {/*</h1>*/}
-                {/*</div>*/}
-                {/*<ArticleList articles={this.state.reverted ? articles.slice().reverse() : articles}/>*/}
                 <ChainList chainList={this.state.chainList}/>
             </div>
         )
     }
-
-    revert = () => this.setState({
-        reverted: !this.state.reverted
-    })
 
     userChosen = (index, id) => {
         console.log("========", index, id)

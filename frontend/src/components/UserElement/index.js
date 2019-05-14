@@ -1,5 +1,4 @@
 import React, {PureComponent} from 'react'
-import Article from "../Article";
 import './style.css'
 
 export default class UserElement extends PureComponent {
