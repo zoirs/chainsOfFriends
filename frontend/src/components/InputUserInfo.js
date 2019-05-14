@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import Avatar from "./Avatar";
+import UserElement from "./UserElement";
 
 const {URL, URLSearchParams} = require('url');
 
@@ -10,7 +10,8 @@ class InputUserInfo extends Component {
         super(props);
         this.state = {
             id: '',
-            avaUrl: ""
+            avaUrl: "",
+            user: null
         };
 
         this.chooseCallback = this.props.chooseCallback;
@@ -21,11 +22,35 @@ class InputUserInfo extends Component {
 
 
     render() {
+        const isUserChecked = this.state.user;
+        let user;
+
+        if (isUserChecked) {
+            user = <UserElement data={this.state.user}/>;
+        } else {
+            user = <UserElement data={{photo:"https://vk.com/images/deactivated_100.png",name:"Пользователь не выбран"}}/>;
+        }
+        
         return (
             <div className="container">
-                <Avatar avaUrl={this.state.avaUrl}/>
-                <input type="text" value={this.state.id} onChange={this.handleChange}
-                       onBlur={this.onGetUserId}/>
+                {user}
+                <br/>
+
+                <div className="input-group mb-3">
+
+                    <div className="input-group-prepend">
+                        <span className="input-group-text" id="basic-addon1">https://vk.com/</span>
+                    </div>
+                    <input type="text"
+                           value={this.state.id}
+                           onChange={this.handleChange}
+                           onBlur={this.onGetUserId}
+                           className="form-control"
+                           placeholder="id140891700"/>
+                    <div className="input-group-append">
+                        <button className="btn btn-outline-secondary" type="button" id="button-addon2">Ok</button>
+                    </div>
+                </div>
             </div>
         )
     }
@@ -51,7 +76,8 @@ class InputUserInfo extends Component {
             })
             .then(user => {
                 this.setState({
-                    avaUrl: user.photo
+                    avaUrl: user.photo,
+                    user: user
                 })
                 this.chooseCallback(this.index, user.id);
             });

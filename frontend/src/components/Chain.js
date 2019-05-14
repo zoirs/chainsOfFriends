@@ -1,12 +1,12 @@
 import React, {PureComponent} from "react";
-import ChainElement from "./ChainElement";
+import UserElement from "./UserElement";
 
 class Chain extends PureComponent {
 
     render() {
         const chain = this.props.chain.map(c =>
             <div style={{display: "inline-block", margin: "1em"}} key={c.id}>
-                <ChainElement data={c}/>
+                <UserElement data={c}/>
             </div>
         );
         return (
