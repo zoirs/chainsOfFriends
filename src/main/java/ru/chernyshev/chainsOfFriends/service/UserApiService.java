@@ -19,7 +19,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.context.WebApplicationContext;
 import ru.chernyshev.chainsOfFriends.FriendsGetQueryWithFieldsOverride;
 import ru.chernyshev.chainsOfFriends.GetFieldsResponseOverride;
-import ru.chernyshev.chainsOfFriends.model.Chains;
+import ru.chernyshev.chainsOfFriends.model.SimpleChains;
 
 import java.util.Collections;
 import java.util.List;
@@ -41,14 +41,14 @@ public class UserApiService {
         this.vk = vk;
     }
 
-    public Chains search(int sourceUserId, int targetUserId, int m) throws ApiException, ClientException {
+    public SimpleChains search(int sourceUserId, int targetUserId, int m) throws ApiException, ClientException {
 
         if (actor == null) {
             logger.warn("No actor");
             return null;
         }
 
-        Chains.Builder builder = new Chains.Builder(String.valueOf(sourceUserId), String.valueOf(targetUserId));
+        SimpleChains.Builder builder = new SimpleChains.Builder(String.valueOf(sourceUserId), String.valueOf(targetUserId));
 
         sleep();
 
@@ -107,7 +107,7 @@ public class UserApiService {
         return source.subList(0, getMaxIndex(source.size(), targetSize));
     }
 
-    private JsonElement findMutual(List<String> targetUserActiveFriends, List<String> sourceUserActiveFriends, Chains.Builder builder) throws ApiException, ClientException {
+    private JsonElement findMutual(List<String> targetUserActiveFriends, List<String> sourceUserActiveFriends, SimpleChains.Builder builder) throws ApiException, ClientException {
         //todo java 9 immutable list
         String e2 = Strings.join(targetUserActiveFriends, ',');
 
@@ -126,7 +126,7 @@ public class UserApiService {
                 "while(tm<jqw) {\n" +
                 "    puf=API.friends.getMutual({\"source_uid\":omk[tm],\"target_uids\":i});\n" +
                 // todo возможно, тут можно отфильтровывать лишние
-
+                // todo проверять количество элеметов в массиве shx, если слишком много, то можно заканчивать
 //                "var i = 0;\n" +
 //                "while (i < puf.length) {\n" +
 //                "    i=i+1;\n" +
@@ -155,7 +155,7 @@ public class UserApiService {
 
         JsonArray array = response.getAsJsonArray();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < targetUserActiveFriends.size(); i++) {
             JsonElement commonFriendsJson = array.get(i);
             JsonArray asJsonArray = commonFriendsJson.getAsJsonArray();
             for (JsonElement element : asJsonArray) {
@@ -163,9 +163,9 @@ public class UserApiService {
                     String id = element.getAsJsonObject().get("id").getAsString();
                     JsonArray common_friends = element.getAsJsonObject().get("common_friends").getAsJsonArray();
                     for (JsonElement common_friend : common_friends) {
-//                        String s = e1[i];
+                        String s = targetUserActiveFriends.get(i);
                         builder.startChain()
-                                .add("todo")
+                                .add(s)
                                 .add(id)
                                 .add(common_friend.getAsString()).complete();
 

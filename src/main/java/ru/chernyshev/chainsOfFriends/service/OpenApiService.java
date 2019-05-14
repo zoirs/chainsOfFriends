@@ -10,17 +10,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.context.WebApplicationContext;
 import ru.chernyshev.chainsOfFriends.model.User;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@Scope(value = WebApplicationContext.SCOPE_SESSION, proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class OpenApiService {
 
     private static Logger logger = LoggerFactory.getLogger(OpenApiService.class);
@@ -37,8 +34,8 @@ public class OpenApiService {
         this.serviceActor = new ServiceActor(clientId, clientSecret, appSecret);
     }
 
-    public User get(String id) {
-        List<UserXtrCounters> users = null;
+    public List<User> get(String ...id) {
+        List<UserXtrCounters> users;
         try {
             users = vk.users().get(serviceActor).userIds(id).fields(Fields.PHOTO_200_ORIG).execute();
         } catch (ApiException | ClientException e) {
@@ -49,6 +46,6 @@ public class OpenApiService {
             logger.error("User not found {}", id);
             return null;
         }
-        return new User(users.get(0));
+        return users.stream().map(User::new).collect(Collectors.toList());
     }
 }

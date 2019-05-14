@@ -22,7 +22,7 @@ public class OpenApiController {
     @ResponseBody
     public User getUser(String id) {
         System.out.println("======== getUser =======" + id);
-        return openApiService.get(id);
+        return openApiService.get(id).get(0);
     }
 
 }

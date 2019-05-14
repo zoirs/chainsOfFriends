@@ -3,11 +3,11 @@ package ru.chernyshev.chainsOfFriends.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Chains {
+public class SimpleChains {
 
     private List<List<String>> chains = new ArrayList();
 
-    private Chains() {
+    private SimpleChains() {
     }
 
     public static class Builder {
@@ -16,13 +16,13 @@ public class Chains {
         private final String u2;
         private List<String> chain;
 
-        private Chains chains;
+        private SimpleChains chains;
 //        private static Builder builder;
 
         public Builder(String u1, String u2) {
             this.u1 = u1;
             this.u2 = u2;
-            this.chains = new Chains();
+            this.chains = new SimpleChains();
         }
 
         public Builder startChain() {
@@ -42,7 +42,7 @@ public class Chains {
             return this;
         }
 
-        public Chains build() {
+        public SimpleChains build() {
             return chains;
         }
     }
