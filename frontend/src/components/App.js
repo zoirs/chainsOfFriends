@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.css'
 import InputUserInfo from "./InputUserInfo";
 import Auth from "./Auth";
 import UserElement from "./UserElement";
+import ChainList from "./ChainList";
 
 const AUTH_STATE = {
     no_data: 'no_data',
@@ -179,7 +180,6 @@ class App extends Component {
         let url = new URL(window.location.href);
 
         if (url.searchParams.get("authSuccess")) {
-            console.log("===================")
             this.setState({needAuth: AUTH_STATE.auth})
             window.close();
         }
@@ -219,6 +219,8 @@ class App extends Component {
                 <br/>
 
                 {authState}
+
+                <ChainList chainList={this.state.chainList}/>
             </div>
         )
     }
@@ -264,15 +266,18 @@ class App extends Component {
             firstUser: this.state.id_1,
             secondUser: this.state.id_2
         };
+        var self = this;
         return fetch('/api/search?' + this.getUrlParams(params))
-            .then(response => {
-                console.log("search", response);
-                return response.json()
+            .then(function (response) {
+                if (response.status === 400) {
+                    alert("Заполни id");
+                } else if (response.status === 200) {
+                    response.json().then(message => {
+                        console.log("search", message);
+                        self.setState({chainList: message});
+                    });
+                }
             })
-            .then(message => {
-                console.log("search", message);
-                this.setState({chainList: message});
-            });
     };
 
     getUrlParams(params) {

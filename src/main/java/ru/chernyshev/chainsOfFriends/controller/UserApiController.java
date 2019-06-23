@@ -5,6 +5,9 @@ import com.vk.api.sdk.exceptions.ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,16 +33,28 @@ public class UserApiController {
     }
 
     @GetMapping("/api/search")
-    public List<List<User>> search(@RequestParam String firstUser, @RequestParam String secondUser) throws ClientException, ApiException {
+    public ResponseEntity<List<List<User>>> search(@RequestParam String firstUser, @RequestParam String secondUser) throws ClientException, ApiException {
 
-        int u1 = Integer.parseInt(firstUser);
-        int u2 = Integer.parseInt(secondUser);
+        if (StringUtils.isEmpty(firstUser) || StringUtils.isEmpty(secondUser)) {
+            logger.error("Is empty {}, {}", firstUser, secondUser);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
 
+        int u1;
+        int u2;
 
-        SimpleChains chains = userApiService.search(u1, u2, 0);
+        try {
+            u1 = Integer.parseInt(firstUser);
+            u2 = Integer.parseInt(secondUser);
+        } catch (NumberFormatException e) {
+            logger.error("Is not number {}, {}", firstUser, secondUser);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+
+        SimpleChains chains = userApiService.search(u1, u2);
         logger.info(chains.getChains().toString());
         FullChains load = chainLoadService.load(chains);
-        return load.getChains();
+        return ResponseEntity.ok(load.getChains());
     }
 
 

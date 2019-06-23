@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.context.WebApplicationContext;
 import ru.chernyshev.chainsOfFriends.FriendsGetQueryWithFieldsOverride;
 import ru.chernyshev.chainsOfFriends.GetFieldsResponseOverride;
+import ru.chernyshev.chainsOfFriends.UserX;
 import ru.chernyshev.chainsOfFriends.model.SimpleChains;
 import ru.chernyshev.chainsOfFriends.model.User;
 
@@ -45,73 +46,87 @@ public class UserApiService {
         this.vk = vk;
     }
 
-    public SimpleChains search(int sourceUserId, int targetUserId, int m) throws ApiException, ClientException {
+    public SimpleChains search(int sourceUserId, int targetUserId) throws ApiException, ClientException {
 
         if (actor == null) {
             logger.warn("No actor");
             return null;
         }
 
-        SimpleChains.Builder builder = new SimpleChains.Builder(String.valueOf(sourceUserId), String.valueOf(targetUserId));
+        SimpleChains.Builder chainBuilder = new SimpleChains.Builder(String.valueOf(sourceUserId), String.valueOf(targetUserId));
 
         sleep();
 
-        GetFieldsResponseOverride sourceUserFriends = new FriendsGetQueryWithFieldsOverride(vk, actor, Fields.CITY, Fields.MAIDEN_NAME).userId(sourceUserId).execute();
-        Integer sourceUserFriendsCount = sourceUserFriends.getCount();
-        System.out.println("У пользователя " + sourceUserId + " " + sourceUserFriendsCount + " друзей");
+        List<UserX> sourceUserFriends = getGetFriends(sourceUserId);
+        List<UserX> targetUserFriends = getGetFriends(targetUserId);
 
-        GetFieldsResponseOverride targetUserFriends = new FriendsGetQueryWithFieldsOverride(vk, actor, Fields.CITY, Fields.MAIDEN_NAME).userId(targetUserId).execute();
-        Integer targetUserFriendsCount = targetUserFriends.getCount();
-        System.out.println("У пользователя " + sourceUserId + " " + targetUserFriendsCount + " друзей");
-
-
-        List<Integer> targetUserFriendIds = targetUserFriends.getItems().stream().map(UserMin::getId).collect(toList());
-        List<Integer> sourceUserFriendsIds = sourceUserFriends.getItems().stream().map(UserMin::getId).collect(toList());
+        List<Integer> targetUserFriendIds = targetUserFriends.stream().map(UserMin::getId).collect(toList());
+        List<Integer> sourceUserFriendsIds = sourceUserFriends.stream().map(UserMin::getId).collect(toList());
 
         if (targetUserFriendIds.contains(sourceUserId) || sourceUserFriendsIds.contains(targetUserId)) {
-            logger.info("Они друзья");
-            builder.startChain().complete();
+            logger.info("{} and {} are friend ", sourceUserId, targetUserId);
+            chainBuilder.startChain().complete();
+            return chainBuilder.build();
         }
 
         List<Integer> crossedFriends = sourceUserFriendsIds.stream().filter(targetUserFriendIds::contains).collect(toList());
         for (Integer crossedFriendId : crossedFriends) {
-            builder.startChain()
+            chainBuilder.startChain()
                     .add(String.valueOf(crossedFriendId))
                     .complete();
         }
+        if (chainBuilder.hasChain()) {
+            logger.info("{} and {} has crossed friend", sourceUserId, targetUserId);
+            return chainBuilder.build();
+        }
 
+        List<String> targetUserActiveFriends = getActiveFriends(targetUserFriends);
+        List<String> sourceUserActiveFriends = getActiveFriends(sourceUserFriends);
 
-        List<String> targetUserActiveFriends = targetUserFriends.getItems().stream()
+        findMutual(Collections.singletonList(String.valueOf(targetUserId)),
+                getSublist(sourceUserActiveFriends, 1),
+                chainBuilder);
+
+        if (chainBuilder.hasChain()) {
+            logger.info("{} and {} has findMutual friend", sourceUserId, targetUserId);
+            return chainBuilder.build();
+        }
+
+        findMutual(Collections.singletonList(String.valueOf(sourceUserId)),
+                getSublist(targetUserActiveFriends, 1),
+                chainBuilder);
+
+        if (chainBuilder.hasChain()) {
+            logger.info("{} and {} has findMutual friend", sourceUserId, targetUserId);
+            return chainBuilder.build();
+        }
+
+        findMutual(
+                getSublist(targetUserActiveFriends, sourceUserActiveFriends.size()),
+                getSublist(sourceUserActiveFriends, targetUserActiveFriends.size()), chainBuilder);
+
+        return chainBuilder.build();
+    }
+
+    private List<String> getActiveFriends(List<UserX> targetUserFriends) {
+        return targetUserFriends.stream()
                 .filter(userXtrLists -> StringUtils.isEmpty(userXtrLists.getDeactivated()) && (!userXtrLists.getClosed()))
                 .map(userXtrLists -> String.valueOf(userXtrLists.getId()))
                 .collect(toList());
+    }
 
-        List<String> sourceUserActiveFriends = sourceUserFriends.getItems().stream()
-                .filter(userXtrLists -> StringUtils.isEmpty(userXtrLists.getDeactivated()) && (!userXtrLists.getClosed())) //отфильтровать по доступности?
-                .map(userXtrLists -> String.valueOf(userXtrLists.getId()))
-                .collect(Collectors.toList());
-
-        JsonElement response1 = findMutual(Collections.singletonList(String.valueOf(targetUserId)),
-                getSublist(sourceUserActiveFriends, 1), builder);
-        logger.info("response1 {}", response1);
-
-        JsonElement response2 = findMutual(Collections.singletonList(String.valueOf(sourceUserId)), getSublist(targetUserActiveFriends, 1), builder);
-        logger.info("response2 {}", response2);
-
-        JsonElement response = findMutual(
-                getSublist(targetUserActiveFriends, sourceUserActiveFriends.size()),
-                getSublist(sourceUserActiveFriends, targetUserActiveFriends.size()), builder);
-
-        logger.info("Результат: " + response.toString());
-
-        return builder.build();
+    private List<UserX> getGetFriends(int userId) throws ApiException, ClientException {
+        GetFieldsResponseOverride userFriends = new FriendsGetQueryWithFieldsOverride(vk, actor, Fields.CITY, Fields.MAIDEN_NAME).userId(userId).execute();
+        Integer friendsCount = userFriends.getCount();
+        logger.info("У пользователя {} {} друзей", userId, friendsCount);
+        return userFriends.getItems();
     }
 
     private List<String> getSublist(List<String> source, int targetSize) {
         return source.subList(0, getMaxIndex(source.size(), targetSize));
     }
 
-    private JsonElement findMutual(List<String> targetUserActiveFriends, List<String> sourceUserActiveFriends, SimpleChains.Builder builder) throws ApiException, ClientException {
+    private void findMutual(List<String> targetUserActiveFriends, List<String> sourceUserActiveFriends, SimpleChains.Builder builder) throws ApiException, ClientException {
         //todo java 9 immutable list
         String e2 = Strings.join(targetUserActiveFriends, ',');
 
@@ -157,27 +172,34 @@ public class UserApiService {
         JsonElement response = vk.execute().code(actor, procedure)
                 .execute();
 
+        logger.info("Результат: " + response.toString());
+
         JsonArray array = response.getAsJsonArray();
 
-        for (int i = 0; i < targetUserActiveFriends.size(); i++) {
-            JsonElement commonFriendsJson = array.get(i);
+        for (int index = 0; index < targetUserActiveFriends.size(); index++) {
+            JsonElement commonFriendsJson = array.get(index);
             JsonArray asJsonArray = commonFriendsJson.getAsJsonArray();
             for (JsonElement element : asJsonArray) {
+//                  {
+//                      "id": 5550613,
+//                      "common_friends": [211805929],
+//                      "common_count": 1
+//                  },
                 if (element.getAsJsonObject().get("common_count").getAsInt() > 0) {
-                    String id = element.getAsJsonObject().get("id").getAsString();
+                    String thirdId = element.getAsJsonObject().get("id").getAsString();
                     JsonArray common_friends = element.getAsJsonObject().get("common_friends").getAsJsonArray();
-                    for (JsonElement common_friend : common_friends) {
-                        String s = targetUserActiveFriends.get(i);
+                    for (JsonElement secondFriend : common_friends) {
+                        String firstId = targetUserActiveFriends.get(index);
                         builder.startChain()
-                                .add(s)
-                                .add(id)
-                                .add(common_friend.getAsString()).complete();
+                                .add(firstId)
+                                .add(secondFriend.getAsString())
+                                .add(thirdId)
+                                .complete();
 
                     }
                 }
             }
         }
-        return response;
     }
 
     private int getMaxIndex(int l1, int l2) {
@@ -191,20 +213,6 @@ public class UserApiService {
             e.printStackTrace();
         }
     }
-
-//    public User get(String id) {
-//        System.out.println("get uuid = " + uuid);
-//
-//        List<UserXtrCounters> users = null;
-//        try {
-//            users = vk.users().get(serviceActor).userIds(id).fields(Fields.PHOTO_200_ORIG).execute();
-//        } catch (ApiException e) {
-//            return null;
-//        } catch (ClientException e) {
-//            return null;
-//        }
-//        return new User(users.get(0));
-//    }
 
     public void setActor(Integer userId, String accessToken) {
         logger.trace("Set actor for {}", userId);
