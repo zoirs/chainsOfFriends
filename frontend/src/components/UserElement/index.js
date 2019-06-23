@@ -4,10 +4,12 @@ import './style.css'
 export default class UserElement extends PureComponent {
 
     render() {
-        const data = this.props.data;
+        const data = this.props.data ? this.props.data : {};
+        console.log('this.props', data)
+        var photoImg = data.photo && <img className="chain-element_img" src={data.photo} alt="-"/>
         return (
             <div className="chain-element_div">
-                <img className="chain-element_img" src={data.photo}/><br/>
+                {photoImg}<br/>
                 {data.name}<br/> {data.lastName}
             </div>
         )

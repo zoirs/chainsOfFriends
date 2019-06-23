@@ -8,6 +8,7 @@ import com.vk.api.sdk.exceptions.ApiException;
 import com.vk.api.sdk.exceptions.ClientException;
 import com.vk.api.sdk.objects.users.Fields;
 import com.vk.api.sdk.objects.users.UserMin;
+import com.vk.api.sdk.objects.users.UserXtrCounters;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,11 +16,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.WebApplicationContext;
 import ru.chernyshev.chainsOfFriends.FriendsGetQueryWithFieldsOverride;
 import ru.chernyshev.chainsOfFriends.GetFieldsResponseOverride;
 import ru.chernyshev.chainsOfFriends.model.SimpleChains;
+import ru.chernyshev.chainsOfFriends.model.User;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +38,7 @@ public class UserApiService {
 
     private final VkApiClient vk;
     private UserActor actor;
+    private UserXtrCounters user;
 
     @Autowired
     public UserApiService(VkApiClient vk) {
@@ -88,10 +92,10 @@ public class UserApiService {
                 .collect(Collectors.toList());
 
         JsonElement response1 = findMutual(Collections.singletonList(String.valueOf(targetUserId)),
-                getSublist(sourceUserActiveFriends,1), builder);
+                getSublist(sourceUserActiveFriends, 1), builder);
         logger.info("response1 {}", response1);
 
-        JsonElement response2 = findMutual(Collections.singletonList(String.valueOf(sourceUserId)), getSublist(targetUserActiveFriends,1), builder);
+        JsonElement response2 = findMutual(Collections.singletonList(String.valueOf(sourceUserId)), getSublist(targetUserActiveFriends, 1), builder);
         logger.info("response2 {}", response2);
 
         JsonElement response = findMutual(
@@ -210,5 +214,25 @@ public class UserApiService {
     public UserActor getActor() {
         logger.trace("Get actor {}", actor);
         return actor;
+    }
+
+    public User getUser() {
+        if (getActor() == null) {
+            return null;
+        }
+        if (user != null) {
+            return new User(user);
+        }
+        List<UserXtrCounters> users;
+        try {
+            users = vk.users().get(actor).userIds(String.valueOf(actor.getId())).fields(Fields.PHOTO_200_ORIG).execute();
+        } catch (ApiException | ClientException e) {
+            return null;
+        }
+        if (CollectionUtils.isEmpty(users)) {
+            return null;
+        }
+        user = users.get(0);
+        return new User(user);
     }
 }

@@ -1,11 +1,19 @@
 import React, {Component} from "react";
-import {IndexRoute} from 'react-router';
+// import {IndexRoute} from 'react-router';
 import 'bootstrap/dist/css/bootstrap.css'
 import InputUserInfo from "./InputUserInfo";
-import ChainList from "./ChainList";
+import Auth from "./Auth";
+import UserElement from "./UserElement";
 
+const AUTH_STATE = {
+    no_data: 'no_data',
+    need_auth: 'need_auth',
+    auth: 'auth',
+};
 
 class App extends Component {
+
+
     constructor(props) {
         super(props);
 
@@ -14,7 +22,8 @@ class App extends Component {
             id_1: "",
             id_2: "",
             canFind: false,
-            needAuth: true,
+            needAuth: AUTH_STATE.no_data,
+            authUser: null,
             chainList: [[{
                 "id": 140891700,
                 "name": "Denis",
@@ -164,19 +173,40 @@ class App extends Component {
 
         };
 
-        this.checkAuth().then(needAuth => {
-            console.log("promise ", needAuth);
-            this.setState({needAuth: needAuth})
-        });
     }
 
     render() {
         let url = new URL(window.location.href);
 
         if (url.searchParams.get("authSuccess")) {
+            console.log("===================")
+            this.setState({needAuth: AUTH_STATE.auth})
             window.close();
         }
 
+        console.log('this.state.needAuth', this.state.needAuth)
+
+        let authState;
+        if (this.state.needAuth === AUTH_STATE.no_data) {
+            authState = <div>Проверка авторизации...</div>
+            this.checkAuth();
+        } else if (this.state.needAuth === AUTH_STATE.need_auth) {
+            authState = <button className="btn  btn-primary" onClick={this.auth}>Авторизоваться</button>
+        } else if (this.state.needAuth === AUTH_STATE.auth) {
+            if (!this.state.authUser) {
+                this.getAuthUser();
+            } else {
+                console.log('this.state.authUser',this.state.authUser);
+                authState = <div>
+                    <div>Учитываются те друзья, которых может видеть: </div><UserElement data={this.state.authUser}/>
+                    <br/>
+                    <div>
+                        <button className="btn  btn-primary" onClick={this.findChain}>Искать</button>
+                    </div>
+                </div>
+
+            }
+        }
 
         return (
             <div className="container">
@@ -187,9 +217,8 @@ class App extends Component {
                     <InputUserInfo index={1} chooseCallback={this.userChosen}/>
                 </div>
                 <br/>
-                <button disabled={!this.state.canFind} className="btn  btn-primary" onClick={this.findChain}>Искать
-                </button>
-                <ChainList chainList={this.state.chainList}/>
+
+                {authState}
             </div>
         )
     }
@@ -211,19 +240,22 @@ class App extends Component {
     };
 
     auth = () => {
-        var params = {
-            firstUser: this.state.id_1,
-            secondUser: this.state.id_2
-        };
-
-        return fetch('/api/authurl?' + this.getUrlParams(params))
+        return fetch('/api/authurl')
             .then(response => {
                 console.log(response);
                 return response.text()
             })
             .then(message => {
-                console.log(message);
-                window.open(message, 'sharer', 'toolbar=0,status=0,width=548,height=325');
+                console.log('get res auth', message);
+                var self = this;
+                var win = window.open(message, 'sharer', 'toolbar=0,status=0,width=548,height=325');
+                var timer = setInterval(function () {
+                    if (win.closed) {
+                        clearInterval(timer);
+                        self.checkAuth();
+                        self.getAuthUser();
+                    }
+                }, 1000);
             });
     };
 
@@ -271,11 +303,23 @@ class App extends Component {
         return fetch('/api/needAuth')
             .then(response => {
                 console.log(response);
-                return response.text()
+                return response.text();
             })
             .then(needAuth => {
-                console.log(needAuth);
-                return needAuth === 'true';
+                console.log('get res needAuth', needAuth);
+                this.setState({needAuth: needAuth === 'true' ? AUTH_STATE.need_auth : AUTH_STATE.auth})
+            });
+    };
+
+    getAuthUser = () => {
+        return fetch('/api/getAuthUser')
+            .then(response => {
+                console.log(response);
+                return response.json();
+            })
+            .then(user => {
+                console.log('get res user', user);
+                this.setState({authUser: user})
             });
     };
 }

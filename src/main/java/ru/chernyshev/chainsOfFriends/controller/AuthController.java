@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
+import ru.chernyshev.chainsOfFriends.model.User;
 import ru.chernyshev.chainsOfFriends.service.UserApiService;
 
 import java.util.List;
@@ -54,6 +55,12 @@ public class AuthController {
         return userApiService.getActor() == null;
     }
 
+    @GetMapping("/api/getAuthUser")
+    public User getAuthUser() {
+        logger.trace("getAuthUser");
+        return userApiService.getUser();
+    }
+
     @GetMapping("/api/authurl")
     public String authurl() {
 //        logger.info("authurl " + firstUser + " " + secondUser);
@@ -92,7 +99,9 @@ public class AuthController {
         }
         UserXtrCounters use1 = getUsersResponse.get(0);
         logger.info(use1.getId() + " " + use1.getFirstName());
-        return new ModelAndView("redirect:" + "/?authSuccess=true");
+//        return new ModelAndView("redirect:" + "http://localhost:300/api/info?user=" + authResponse.getUserId());
+
+        return new ModelAndView("redirect:" + "http://localhost:3000/?authSuccess=true");
     }
 
     private String getOAuthUrl() {

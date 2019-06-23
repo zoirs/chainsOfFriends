@@ -12,7 +12,7 @@ public class User {
         this.id = user.getId();
         this.name = user.getFirstName();
         this.lastName = user.getLastName();
-        this.photo = user.getPhoto200Orig().toString();
+        this.photo = user.getPhoto200Orig() != null ? user.getPhoto200Orig().toString() : "";
     }
 
     public Integer getId() {
