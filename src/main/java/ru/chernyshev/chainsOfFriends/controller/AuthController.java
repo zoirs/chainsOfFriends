@@ -83,7 +83,7 @@ public class AuthController {
         logger.info("Callback. Get auth token {} for user {}", authResponse.getUserId(), authResponse.getAccessToken());
         userApiService.setActor(authResponse.getUserId(), authResponse.getAccessToken());
 
-        return new ModelAndView("redirect:http://" + host + "/?authSuccess=true");
+        return new ModelAndView("redirect:https://" + host + "/?authSuccess=true");
 
         //        return new ModelAndView("redirect:" + "http://localhost:3000/?authSuccess=true");
         //        return new ModelAndView("redirect:http://" + host + "/api/info?user=" + authResponse.getUserId());
@@ -94,6 +94,6 @@ public class AuthController {
     }
 
     private String getRedirectUri() {
-        return "http://" + host + "/callback";
+        return "https://" + host + "/callback";
     }
 }
