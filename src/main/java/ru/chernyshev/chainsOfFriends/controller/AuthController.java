@@ -99,9 +99,8 @@ public class AuthController {
         }
         UserXtrCounters use1 = getUsersResponse.get(0);
         logger.info(use1.getId() + " " + use1.getFirstName());
-//        return new ModelAndView("redirect:" + "http://localhost:300/api/info?user=" + authResponse.getUserId());
-
-        return new ModelAndView("redirect:" + "http://localhost:3000/?authSuccess=true");
+//        return new ModelAndView("redirect:" + "http://localhost:3000/?authSuccess=true");
+        return new ModelAndView("redirect:http://" + host + "/?authSuccess=true");
     }
 
     private String getOAuthUrl() {
