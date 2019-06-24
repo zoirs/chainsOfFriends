@@ -321,29 +321,33 @@ public class UserApiService {
     }
 
     public void setActor(Integer userId, String accessToken) {
-        logger.trace("Set actor for {}", userId);
+        logger.info("Set actor for {}", userId);
         actor = new UserActor(userId, accessToken);
     }
 
     public UserActor getActor() {
-        logger.trace("Get actor {}", actor);
+        logger.info("Get actor {}", actor);
         return actor;
     }
 
     public User getUser() {
         if (getActor() == null) {
+            logger.warn("Not authorized user");
             return null;
         }
         if (user != null) {
             return new User(user);
         }
+        Integer actorId = actor.getId();
         List<UserXtrCounters> users;
         try {
-            users = vk.users().get(actor).userIds(String.valueOf(actor.getId())).fields(Fields.PHOTO_200_ORIG).execute();
+            users = vk.users().get(actor).userIds(String.valueOf(actorId)).fields(Fields.PHOTO_200_ORIG).execute();
         } catch (ApiException | ClientException e) {
+            logger.error("Vk api error. Can't get authorized user", e);
             return null;
         }
         if (CollectionUtils.isEmpty(users)) {
+            logger.warn("Can't get actor user {}", actorId);
             return null;
         }
         user = users.get(0);

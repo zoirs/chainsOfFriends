@@ -2,9 +2,7 @@ package ru.chernyshev.chainsOfFriends.controller;
 
 
 import com.vk.api.sdk.client.VkApiClient;
-import com.vk.api.sdk.client.actors.UserActor;
 import com.vk.api.sdk.objects.UserAuthResponse;
-import com.vk.api.sdk.objects.users.UserXtrCounters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 import ru.chernyshev.chainsOfFriends.model.User;
 import ru.chernyshev.chainsOfFriends.service.UserApiService;
-
-import java.util.List;
 
 @RestController
 public class AuthController {
@@ -45,20 +41,27 @@ public class AuthController {
 
     @GetMapping("/api/login")
     public ModelAndView login() {
-        logger.trace("login");
+        logger.info("login");
         return new ModelAndView("redirect:" + getOAuthUrl());
     }
 
     @GetMapping("/api/needAuth")
     public boolean needAuth() {
-        logger.trace("needAuth");
+        logger.info("needAuth");
         return userApiService.getActor() == null;
     }
 
     @GetMapping("/api/getAuthUser")
     public User getAuthUser() {
-        logger.trace("getAuthUser");
-        return userApiService.getUser();
+        if (userApiService.getActor() == null) {
+            logger.info("Not authorized");
+            return null;
+        }
+        User authUser = userApiService.getUser();
+        if (authUser == null) {
+            logger.info("Can't get authorized user");
+        }
+        return authUser;
     }
 
     @GetMapping("/api/authurl")
@@ -69,38 +72,21 @@ public class AuthController {
 
     @GetMapping("/callback")
     public ModelAndView callback(@RequestParam String code) {
-        logger.trace("callback");
-        UserAuthResponse authResponse = null;
+        logger.info("Callback. Get auth code {}", code);
+        UserAuthResponse authResponse;
         try {
             authResponse = vk.oAuth().userAuthorizationCodeFlow(clientId, clientSecret, getRedirectUri(), code).execute();
         } catch (Exception e) {
-            logger.error("error get user authorization code flow", e);
+            logger.error("Vk api error. Can't get user authorization code flow", e);
             return null;
         }
+        logger.info("Callback. Get auth token {} for user {}", authResponse.getUserId(), authResponse.getAccessToken());
         userApiService.setActor(authResponse.getUserId(), authResponse.getAccessToken());
-        return new ModelAndView("redirect:" + "/api/info?user=" + authResponse.getUserId());
-    }
 
-    @GetMapping("/api/info")
-    public ModelAndView info(@RequestParam String user) {
-        logger.trace("info");
-        UserActor actor = userApiService.getActor();
-
-        if (actor == null) {
-            logger.warn("User actor is null");
-            return null;
-        }
-        List<UserXtrCounters> getUsersResponse;
-        try {
-            getUsersResponse = vk.users().get(actor).userIds(user).execute();
-        } catch (Exception e) {
-            logger.error("Cant get user", e);
-            return null;
-        }
-        UserXtrCounters use1 = getUsersResponse.get(0);
-        logger.info(use1.getId() + " " + use1.getFirstName());
-//        return new ModelAndView("redirect:" + "http://localhost:3000/?authSuccess=true");
         return new ModelAndView("redirect:http://" + host + "/?authSuccess=true");
+
+        //        return new ModelAndView("redirect:" + "http://localhost:3000/?authSuccess=true");
+        //        return new ModelAndView("redirect:http://" + host + "/api/info?user=" + authResponse.getUserId());
     }
 
     private String getOAuthUrl() {
