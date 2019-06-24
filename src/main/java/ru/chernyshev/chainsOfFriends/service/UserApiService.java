@@ -41,6 +41,7 @@ public class UserApiService {
 
     @Autowired
     public UserApiService(VkApiClient vk) {
+        logger.info("Initialize UserApiService");
         this.vk = vk;
     }
 
