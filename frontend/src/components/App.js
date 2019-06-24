@@ -3,7 +3,6 @@ import React, {Component} from "react";
 import 'bootstrap/dist/css/bootstrap.css'
 import InputUserInfo from "./InputUserInfo";
 import Auth from "./Auth";
-import UserElement from "./UserElement";
 import ChainList from "./ChainList";
 
 const AUTH_STATE = {
@@ -20,6 +19,7 @@ class App extends Component {
 
         this.state = {
             reverted: false,
+            isSearch: false,
             id_1: "",
             id_2: "",
             canFind: false,
@@ -177,53 +177,68 @@ class App extends Component {
     }
 
     render() {
-        let url = new URL(window.location.href);
 
-        if (url.searchParams.get("authSuccess")) {
-            this.setState({needAuth: AUTH_STATE.auth})
-            window.close();
-        }
 
-        console.log('this.state.needAuth', this.state.needAuth)
+        let spinner = this.state.isSearch && <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{margin:"5px"}} />;
 
-        let authState;
-        if (this.state.needAuth === AUTH_STATE.no_data) {
-            authState = <div>Проверка авторизации...</div>
-            this.checkAuth();
-        } else if (this.state.needAuth === AUTH_STATE.need_auth) {
-            authState = <button className="btn  btn-primary" onClick={this.auth}>Авторизоваться</button>
-        } else if (this.state.needAuth === AUTH_STATE.auth) {
-            if (!this.state.authUser) {
-                this.getAuthUser();
-            } else {
-                console.log('this.state.authUser',this.state.authUser);
-                authState = <div>
-                    <div>Учитываются те друзья, которых может видеть: </div><UserElement data={this.state.authUser}/>
-                    <br/>
-                    <div>
-                        <button className="btn  btn-primary" onClick={this.findChain}>Искать</button>
-                    </div>
-                </div>
-
-            }
-        }
+        let findButton =
+            <button className="btn  btn-primary"
+                    disabled={this.state.needAuth !== AUTH_STATE.auth || this.state.isSearch || this.state.id_1==="" || this.state.id_2===""}
+                    onClick={this.findChain}>
+                {spinner}
+                Искать
+            </button>;
 
         return (
             <div className="container">
-                <div style={{display: "inline-block", margin: "1em"}}>
-                    <InputUserInfo index={0} chooseCallback={this.userChosen}/>
+
+                <div className="card text-center">
+                    <div className="card-header text-right">
+                        <Auth authCallback={this.authCallback}/>
+                    </div>
+
                 </div>
-                <div style={{display: "inline-block", margin: "1em"}}>
-                    <InputUserInfo index={1} chooseCallback={this.userChosen}/>
+                {/*<div className="card-body">*/}
+<br/>
+                <div className="text-center" style={{margin:"50px"}}>
+                <h5 className="card-title">Поиск общих знакомых</h5>
+                <p className="card-text">Согласно теории шести рукопожатий, каждый человек опосредованно знаком
+                    с любым другим жителем планеты через цепочку общих знакомых, в среднем состоящую из пяти
+                    человек. </p>
+                </div>
+                {/*</div>*/}
+                <div className="container px-lg-5">
+                    <div className="row mx-lg-n5">
+                        <div className="col py-3 px-lg-5">
+                            <InputUserInfo index={0} chooseCallback={this.userChosen}/>
+                        </div>
+                        <div className="col py-3 px-lg-5">
+                            <InputUserInfo index={1} chooseCallback={this.userChosen}/>
+                        </div>
+                    </div>
                 </div>
                 <br/>
 
-                {authState}
 
-                <ChainList chainList={this.state.chainList}/>
+                <div className="card text-center">
+                    <div className="card-header text-right">
+                        {findButton}
+                    </div>
+                    <div className="card-body">
+                        <ChainList chainList={this.state.chainList}/>
+                    </div>
+                </div>
+
+
+
             </div>
         )
     }
+
+    authCallback = (authState) => {
+        console.log('authCallback ===================', authState)
+        this.setState({needAuth: authState})
+    };
 
     userChosen = (index, id) => {
         console.log("========", index, id)
@@ -241,34 +256,16 @@ class App extends Component {
         })
     };
 
-    auth = () => {
-        return fetch('/api/authurl')
-            .then(response => {
-                console.log(response);
-                return response.text()
-            })
-            .then(message => {
-                console.log('get res auth', message);
-                var self = this;
-                var win = window.open(message, 'sharer', 'toolbar=0,status=0,width=548,height=325');
-                var timer = setInterval(function () {
-                    if (win.closed) {
-                        clearInterval(timer);
-                        self.checkAuth();
-                        self.getAuthUser();
-                    }
-                }, 1000);
-            });
-    };
-
     search = () => {
         var params = {
             firstUser: this.state.id_1,
             secondUser: this.state.id_2
         };
+        this.setState({isSearch:true})
         var self = this;
         return fetch('/api/search?' + this.getUrlParams(params))
             .then(function (response) {
+                self.setState({isSearch:false})
                 if (response.status === 400) {
                     alert("Заполни id");
                 } else if (response.status === 200) {
@@ -289,44 +286,22 @@ class App extends Component {
     }
 
     findChain = () => {
-
-        this.checkAuth().then(needAuth => {
-            console.log("promise ", needAuth);
-            if (needAuth) {
-                this.auth().then(() => {
-                    console.log("можно искать1")
-                    // this.search();
-                });
-            } else {
-                console.log("можно искать2")
-                this.search();
-            }
-        });
+        if (this.state.needAuth === AUTH_STATE.auth) {
+            this.search();
+        }
+        // this.checkAuth().then(needAuth => {
+        //     console.log("promise ", needAuth);
+        //     if (needAuth) {
+        //         this.auth().then(() => {
+        //             console.log("можно искать1")
+        //             this.search();
+        //         });
+        //     } else {
+        //         console.log("можно искать2")
+        //         this.search();
+        //     }
+        // });
     }
-
-    checkAuth = () => {
-        return fetch('/api/needAuth')
-            .then(response => {
-                console.log(response);
-                return response.text();
-            })
-            .then(needAuth => {
-                console.log('get res needAuth', needAuth);
-                this.setState({needAuth: needAuth === 'true' ? AUTH_STATE.need_auth : AUTH_STATE.auth})
-            });
-    };
-
-    getAuthUser = () => {
-        return fetch('/api/getAuthUser')
-            .then(response => {
-                console.log(response);
-                return response.json();
-            })
-            .then(user => {
-                console.log('get res user', user);
-                this.setState({authUser: user})
-            });
-    };
 }
 
 export default App
