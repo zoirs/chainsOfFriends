@@ -25,9 +25,7 @@ import ru.chernyshev.chainsOfFriends.UserX;
 import ru.chernyshev.chainsOfFriends.model.SimpleChains;
 import ru.chernyshev.chainsOfFriends.model.User;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -83,27 +81,33 @@ public class UserApiService {
         List<String> targetUserActiveFriends = getActiveFriends(targetUserFriends);
         List<String> sourceUserActiveFriends = getActiveFriends(sourceUserFriends);
 
-        findMutual(Collections.singletonList(String.valueOf(targetUserId)),
+//        janyleb
+//        belov.live id140891700
+        JsonElement response = findMutual(String.valueOf(targetUserId),
                 getSublist(sourceUserActiveFriends, 1),
                 chainBuilder);
 
+        add(chainBuilder, response, true);
+
         if (chainBuilder.hasChain()) {
-            logger.info("{} and {} has findMutual friend", sourceUserId, targetUserId);
+            logger.info("First step {} and {} has findMutual friend", sourceUserId, targetUserId);
             return chainBuilder.build();
         }
 
-        findMutual(Collections.singletonList(String.valueOf(sourceUserId)),
+        JsonElement mutual = findMutual(String.valueOf(sourceUserId),
                 getSublist(targetUserActiveFriends, 1),
                 chainBuilder);
 
+        add(chainBuilder, mutual, false);
+
         if (chainBuilder.hasChain()) {
-            logger.info("{} and {} has findMutual friend", sourceUserId, targetUserId);
+            logger.info("Second step {} and {} has findMutual friend", sourceUserId, targetUserId);
             return chainBuilder.build();
         }
 
         findMutual(
-                getSublist(targetUserActiveFriends, sourceUserActiveFriends.size()),
-                getSublist(sourceUserActiveFriends, targetUserActiveFriends.size()), chainBuilder);
+                getSublist(sourceUserActiveFriends, targetUserActiveFriends.size()),
+                getSublist(targetUserActiveFriends, sourceUserActiveFriends.size()), chainBuilder);
 
         return chainBuilder.build();
     }
@@ -124,6 +128,95 @@ public class UserApiService {
 
     private List<String> getSublist(List<String> source, int targetSize) {
         return source.subList(0, getMaxIndex(source.size(), targetSize));
+    }
+
+    //нужно заменить на API.friends.getMutual а не вызов процедуры
+    private JsonElement findMutual(String user, List<String> sourceUserActiveFriends, SimpleChains.Builder builder) throws ApiException, ClientException {
+        //todo java 9 immutable list
+        String e1 = user;
+
+        String e2 = Strings.join(sourceUserActiveFriends, ',');
+
+        sleep();
+
+        // todo найти общих дрзей у u1 со всеми друзьями u2
+        String procedure = "" +
+                "var omk=[:e1],\n" +
+                "i=[:e2],\n" +
+                "jqw=omk.length,\n" +
+                "puf,\n" +
+                "tm=0,\n" +
+                "shx=[];\n" +
+                "while(tm<jqw) {\n" +
+                "    puf=API.friends.getMutual({\"source_uid\":omk[tm],\"target_uids\":i});\n" +
+                // todo возможно, тут можно отфильтровывать лишние
+                // todo проверять количество элеметов в массиве shx, если слишком много, то можно заканчивать
+//                "var i = 0;\n" +
+//                "while (i < puf.length) {\n" +
+//                "    i=i+1;\n" +
+//                "    if (puf[i].common_count > 0) {     \n"+
+//                "       shx.push({\"user\":omk[tm],\"f\":puf[i]});\n" +
+//                "    }  \n"+
+//                "}; \n"+
+
+                "    shx.push(puf);\n" +
+                "    tm=tm+1;\n" +
+                "}\n" +
+                "return shx;";
+
+//        if (e2.length() < e1.length()) {
+        procedure = procedure.replace(":e1", e1);
+        procedure = procedure.replace(":e2", e2);
+//        } else {
+//            procedure = procedure.replace(":e1", e1);
+//            procedure = procedure.replace(":e2", e2);
+//        }
+
+        System.out.println("вызываем процедуру " + procedure);
+
+        JsonElement response = vk.execute().code(actor, procedure)
+                .execute();
+
+        logger.info("Результат: " + response.toString());
+
+        return response;
+    }
+
+    private void add(SimpleChains.Builder builder, JsonElement response, boolean isReverted) {
+        JsonArray array = response.getAsJsonArray();
+
+//        for (int index = 0; index < user.size(); index++) {
+        JsonElement commonFriendsJson = array.get(0);
+        JsonArray asJsonArray = commonFriendsJson.getAsJsonArray();
+        for (JsonElement element : asJsonArray) {
+//                  {
+//                      "id": 5550613,
+//                      "common_friends": [211805929],
+//                      "common_count": 1
+//                  },
+            if (element.getAsJsonObject().get("common_count").getAsInt() > 0) {
+                String thirdId = element.getAsJsonObject().get("id").getAsString();
+                JsonArray common_friends = element.getAsJsonObject().get("common_friends").getAsJsonArray();
+                for (JsonElement secondFriend : common_friends) {
+//                        String firstId = user.get(index);
+                    if (isReverted) {
+                        builder.startChain()
+//                                .add(firstId)
+                                .add(thirdId)
+                                .add(secondFriend.getAsString())
+                                .complete();
+                    } else {
+                        builder.startChain()
+//                                .add(firstId)
+                                .add(secondFriend.getAsString())
+                                .add(thirdId)
+                                .complete();
+                    }
+
+                }
+            }
+        }
+//        }
     }
 
     private void findMutual(List<String> targetUserActiveFriends, List<String> sourceUserActiveFriends, SimpleChains.Builder builder) throws ApiException, ClientException {
@@ -159,10 +252,14 @@ public class UserApiService {
                 "}\n" +
                 "return shx;";
 
-        if (e2.length() < e1.length()) {
+        List<String> list;
+        boolean isReverted = e2.length() < e1.length();
+        if (isReverted) {
+            list = targetUserActiveFriends;
             procedure = procedure.replace(":e1", e2);
             procedure = procedure.replace(":e2", e1);
         } else {
+            list = sourceUserActiveFriends;
             procedure = procedure.replace(":e1", e1);
             procedure = procedure.replace(":e2", e2);
         }
@@ -176,7 +273,7 @@ public class UserApiService {
 
         JsonArray array = response.getAsJsonArray();
 
-        for (int index = 0; index < targetUserActiveFriends.size(); index++) {
+        for (int index = 0; index < list.size(); index++) {
             JsonElement commonFriendsJson = array.get(index);
             JsonArray asJsonArray = commonFriendsJson.getAsJsonArray();
             for (JsonElement element : asJsonArray) {
@@ -189,13 +286,22 @@ public class UserApiService {
                     String thirdId = element.getAsJsonObject().get("id").getAsString();
                     JsonArray common_friends = element.getAsJsonObject().get("common_friends").getAsJsonArray();
                     for (JsonElement secondFriend : common_friends) {
-                        String firstId = targetUserActiveFriends.get(index);
-                        builder.startChain()
-                                .add(firstId)
-                                .add(secondFriend.getAsString())
-                                .add(thirdId)
-                                .complete();
+                        String firstId = list.get(index);
+                        if (!isReverted) {
+                            builder.startChain()
+                                    .add(thirdId)
+                                    .add(secondFriend.getAsString())
+                                    .add(firstId)
+                                    .complete();
 
+                        } else {
+                            builder.startChain()
+                                    .add(firstId)
+                                    .add(secondFriend.getAsString())
+                                    .add(thirdId)
+                                    .complete();
+
+                        }
                     }
                 }
             }

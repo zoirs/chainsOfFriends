@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -28,10 +29,15 @@ public class OpenApiController {
     @RequestMapping(value = "/api/user", method = RequestMethod.GET)
     @ResponseBody
     public User getUser(String id) {
+        if (StringUtils.isEmpty(id)) {
+            logger.error("User {} not found ", id);
+            return null;
+        }
         logger.info("getUser " + id);
         List<User> users = openApiService.get(id);
         if (CollectionUtils.isEmpty(users)){
             logger.info("User {} not found ", id);
+            return null;
         }
         return users.get(0);
     }
