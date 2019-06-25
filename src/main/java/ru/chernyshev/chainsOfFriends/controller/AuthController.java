@@ -22,6 +22,7 @@ public class AuthController {
     private final int clientId;
     private final String host;
     private final String clientSecret;
+    private final String protocol;
 
     private final VkApiClient vk;
     private final UserApiService userApiService;
@@ -31,12 +32,14 @@ public class AuthController {
                           UserApiService userApiService,
                           @Value("${client.id}") int clientId,
                           @Value("${server.host}") String host,
-                          @Value("${client.secret}") String clientSecret) {
+                          @Value("${client.secret}") String clientSecret,
+                          @Value("${protocol:https}") String protocol) {
         this.vk = vk;
         this.userApiService = userApiService;
         this.clientId = clientId;
         this.host = host;
         this.clientSecret = clientSecret;
+        this.protocol = protocol;
     }
 
     @GetMapping("/api/login")
@@ -48,12 +51,12 @@ public class AuthController {
     @GetMapping("/api/needAuth")
     public boolean needAuth() {
         logger.info("needAuth");
-        return userApiService.getActor() == null;
+        return userApiService.needAuth();
     }
 
     @GetMapping("/api/getAuthUser")
     public User getAuthUser() {
-        if (userApiService.getActor() == null) {
+        if (userApiService.needAuth()) {
             logger.info("Not authorized");
             return null;
         }
@@ -66,7 +69,6 @@ public class AuthController {
 
     @GetMapping("/api/authurl")
     public String authurl() {
-//        logger.info("authurl " + firstUser + " " + secondUser);
         return getOAuthUrl();
     }
 
@@ -83,10 +85,7 @@ public class AuthController {
         logger.info("Callback. Get auth token {} for user {}", authResponse.getUserId(), authResponse.getAccessToken());
         userApiService.setActor(authResponse.getUserId(), authResponse.getAccessToken());
 
-        return new ModelAndView("redirect:https://" + host + "/?authSuccess=true");
-
-        //        return new ModelAndView("redirect:" + "http://localhost:3000/?authSuccess=true");
-        //        return new ModelAndView("redirect:http://" + host + "/api/info?user=" + authResponse.getUserId());
+        return new ModelAndView("redirect:" + protocol + "://" + host + "/?authSuccess=true");
     }
 
     private String getOAuthUrl() {
@@ -94,6 +93,6 @@ public class AuthController {
     }
 
     private String getRedirectUri() {
-        return "https://" + host + "/callback";
+        return protocol + "://" + host + "/callback";
     }
 }

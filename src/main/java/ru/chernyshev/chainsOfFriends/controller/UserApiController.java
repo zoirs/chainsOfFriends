@@ -40,18 +40,18 @@ public class UserApiController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
 
-        int u1;
-        int u2;
+        int firstUid;
+        int secondUid;
 
         try {
-            u1 = Integer.parseInt(firstUser);
-            u2 = Integer.parseInt(secondUser);
+            firstUid = Integer.parseInt(firstUser);
+            secondUid = Integer.parseInt(secondUser);
         } catch (NumberFormatException e) {
             logger.error("Is not number {}, {}", firstUser, secondUser);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
 
-        SimpleChains chains = userApiService.search(u1, u2);
+        SimpleChains chains = userApiService.search(firstUid, secondUid);
         logger.info(chains.getChains().toString());
         FullChains load = chainLoadService.load(chains);
         return ResponseEntity.ok(load.getChains());

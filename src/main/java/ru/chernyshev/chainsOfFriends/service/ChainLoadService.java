@@ -8,7 +8,6 @@ import ru.chernyshev.chainsOfFriends.model.User;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ChainLoadService {
@@ -28,7 +27,7 @@ public class ChainLoadService {
         }
 
 //        String ids = chains.stream().map(chain -> String.join(",", chain)).collect(Collectors.joining(","));
-        List<User> users = openApiService.get(s.toArray(new String[s.size()]));
+        List<User> users = openApiService.get(s.toArray(new String[0]));
         return new FullChains(chains, users);
     }
 }

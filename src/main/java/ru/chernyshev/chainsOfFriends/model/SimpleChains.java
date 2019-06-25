@@ -2,6 +2,7 @@ package ru.chernyshev.chainsOfFriends.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SimpleChains {
 
@@ -12,14 +13,14 @@ public class SimpleChains {
 
     public static class Builder {
 
-        private final String firstUser;
-        private final String lastUser;
-        private List<String> chain;
+        private final Integer firstUser;
+        private final Integer lastUser;
+        private List<Integer> chain;
 
         private SimpleChains result;
 //        private static Builder builder;
 
-        public Builder(String firstUser, String lastUser) {
+        public Builder(Integer firstUser, Integer lastUser) {
             this.firstUser = firstUser;
             this.lastUser = lastUser;
             this.result = new SimpleChains();
@@ -31,18 +32,21 @@ public class SimpleChains {
             return this;
         }
 
-        public Builder add(String link) {
-            if (chain.size() == 1 && chain.contains(link)) {
-                // из за нарушеной логики поиска
-                return this;
-            }
+        public Builder add(Integer link) {
+//            if (chain.size() == 1 && chain.contains(link)) {
+//                // из за нарушеной логики поиска
+//                return this;
+//            }
             chain.add(link);
             return this;
         }
 
         public Builder complete() {
             chain.add(lastUser);
-            result.add(chain);
+            List<String> ids = chain.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.toList());
+            result.add(ids);
             return this;
         }
 

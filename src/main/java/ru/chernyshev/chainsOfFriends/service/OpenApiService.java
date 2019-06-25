@@ -34,6 +34,9 @@ public class OpenApiService {
         this.serviceActor = new ServiceActor(clientId, clientSecret, appSecret);
     }
 
+    /**
+     * @param id идентификатор пользователя (Обязательно строковый, тк приходи с вне)
+     * */
     public List<User> get(String ...id) {
         List<UserXtrCounters> users;
         try {
