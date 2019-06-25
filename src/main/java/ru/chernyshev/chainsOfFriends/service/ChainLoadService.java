@@ -6,8 +6,10 @@ import ru.chernyshev.chainsOfFriends.model.FullChains;
 import ru.chernyshev.chainsOfFriends.model.SimpleChains;
 import ru.chernyshev.chainsOfFriends.model.User;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ChainLoadService {
@@ -19,15 +21,17 @@ public class ChainLoadService {
     }
 
     public FullChains load(SimpleChains simpleChains) {
+        if (!simpleChains.hasChain()) {
+            return new FullChains(Collections.emptyList(), Collections.emptyList());
+        }
         List<List<String>> chains = simpleChains.getChains().subList(0, Math.min(simpleChains.getChains().size(), 10));
 
-        List<String> s = new ArrayList<>();
+        Set<String> allUserIds = new HashSet<>();
         for (List<String> chain : chains) {//todo to stream api?
-            s.addAll(chain);
+            allUserIds.addAll(chain);
         }
 
-//        String ids = chains.stream().map(chain -> String.join(",", chain)).collect(Collectors.joining(","));
-        List<User> users = openApiService.get(s.toArray(new String[0]));
-        return new FullChains(chains, users);
+        List<User> allUsers = openApiService.get(allUserIds.toArray(new String[0]));
+        return new FullChains(chains, allUsers);
     }
 }

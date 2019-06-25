@@ -10,6 +10,8 @@ export default class ChainList extends PureComponent {
         );
         return (
             <div>
+                Найдено цепочек: {this.props.chainList.length}
+                <br/>
                 {chainList}
             </div>
         )

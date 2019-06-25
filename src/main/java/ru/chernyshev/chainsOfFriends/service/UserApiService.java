@@ -122,6 +122,11 @@ public class UserApiService {
         List<Integer> targetUserActiveFriends = filterActiveFriends(targetUserFriends);
         List<Integer> sourceUserActiveFriends = filterActiveFriends(sourceUserFriends);
 
+        if (CollectionUtils.isEmpty(targetUserActiveFriends) || CollectionUtils.isEmpty(sourceUserActiveFriends)) {
+            logger.info("No friend");
+            return chainBuilder.build();
+        }
+
 //        janyleb
 //        belov.live id140891700
 

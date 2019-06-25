@@ -3,6 +3,8 @@ package ru.chernyshev.chainsOfFriends.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,18 +30,20 @@ public class OpenApiController {
 
     @RequestMapping(value = "/api/user", method = RequestMethod.GET)
     @ResponseBody
-    public User getUser(String id) {
+    public ResponseEntity<User> getUser(String id) {
         if (StringUtils.isEmpty(id)) {
             logger.error("User {} not found ", id);
-            return null;
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(null);
         }
         logger.info("getUser " + id);
         List<User> users = openApiService.get(id);
-        if (CollectionUtils.isEmpty(users)){
+        if (CollectionUtils.isEmpty(users)) {
             logger.info("User {} not found ", id);
-            return null;
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(null);
         }
-        return users.get(0);
+        return ResponseEntity.ok(users.get(0));
     }
 
 }

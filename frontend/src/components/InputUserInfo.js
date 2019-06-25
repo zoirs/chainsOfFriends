@@ -10,8 +10,8 @@ class InputUserInfo extends Component {
         super(props);
         this.state = {
             id: '',
-            avaUrl: "",
-            user: null
+            user: null,
+            error: null
         };
 
         this.chooseCallback = this.props.chooseCallback;
@@ -28,9 +28,16 @@ class InputUserInfo extends Component {
         if (isUserChecked) {
             user = <UserElement data={this.state.user}/>;
         } else {
-            user = <UserElement data={{photo:"https://vk.com/images/deactivated_100.png",name:"Пользователь не выбран"}}/>;
+            user = <UserElement
+                data={{photo: "https://vk.com/images/deactivated_100.png", name: "Пользователь не выбран"}}/>;
         }
-        
+
+        var error = this.state.error &&
+            <div className="input-group-append alert alert-danger" role="alert">
+                {this.state.error}
+            </div>;
+
+
         return (
             <div className="container">
                 {user}
@@ -50,6 +57,7 @@ class InputUserInfo extends Component {
                     <div className="input-group-append">
                         <button className="btn btn-outline-secondary" type="button" id="button-addon2">Ok</button>
                     </div>
+                    {error}
                 </div>
             </div>
         )
@@ -70,17 +78,24 @@ class InputUserInfo extends Component {
 
         console.log(query);
 
+        var self = this;
         fetch('/api/user?' + query)
             .then(response => {
-                return response.json();
+                if (response.status === 400) {
+                    self.setState({
+                        user: null,
+                        error: "Не корректный id или профиль скрыт"
+                    });
+                } else if (response.status === 200) {
+                    response.json().then(user => {
+                        self.setState({
+                            user: user,
+                            error: null
+                        });
+                        this.chooseCallback(this.index, user.id);
+                    });
+                }
             })
-            .then(user => {
-                this.setState({
-                    avaUrl: user.photo,
-                    user: user
-                })
-                this.chooseCallback(this.index, user.id);
-            });
 
     };
 

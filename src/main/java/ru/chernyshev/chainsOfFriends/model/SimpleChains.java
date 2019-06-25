@@ -1,8 +1,12 @@
 package ru.chernyshev.chainsOfFriends.model;
 
+import org.springframework.util.CollectionUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.springframework.util.CollectionUtils.isEmpty;
 
 public class SimpleChains {
 
@@ -66,4 +70,9 @@ public class SimpleChains {
     public List<List<String>> getChains() {
         return chains;
     }
+
+    public boolean hasChain(){
+        return !isEmpty(getChains());
+    }
+
 }

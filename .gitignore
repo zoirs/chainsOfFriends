@@ -42,6 +42,8 @@ HELP.md
 # production
 /frontend/build
 
+*/application.properties
+
 # misc
 .DS_Store
 .env.local
