@@ -34,7 +34,7 @@ class App extends Component {
 
 
         let spinner = this.state.isSearch && <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{margin:"5px"}} />;
-
+        let authMsg = this.state.needAuth !== AUTH_STATE.auth && <span className="badge badge-warning">Необходимо авторизоваться</span>;
         let findButton =
             <button className="btn  btn-primary"
                     disabled={this.state.needAuth !== AUTH_STATE.auth || this.state.isSearch || this.state.id_1==="" || this.state.id_2===""}
@@ -76,7 +76,8 @@ class App extends Component {
 
                 <div className="card text-center">
                     <div className="card-header text-right">
-                        {findButton}
+                        {findButton}<br/>
+                        {authMsg}
                     </div>
                     <div className="card-body">
                         <ChainList chainList={this.state.chainList}/>
